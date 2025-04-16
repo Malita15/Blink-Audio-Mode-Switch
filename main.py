@@ -1,61 +1,125 @@
 import cv2
-import pyttsx3
+import dlib
+from scipy.spatial import distance
 import time
 import speech_recognition as sr
+import pyttsx3
+import pywhatkit
+import webbrowser
+import subprocess
 
-# Initialize voice engine
-engine = pyttsx3.init()
+# Blink detection parameters
+def eye_aspect_ratio(eye):
+    A = distance.euclidean(eye[1], eye[5])
+    B = distance.euclidean(eye[2], eye[4])
+    C = distance.euclidean(eye[0], eye[3])
+    return (A + B) / (2.0 * C)
 
-# Load Haar cascades for face and eye detection
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
+def detect_blink(triple_count=3, time_limit=3):
+    print("Detecting blinks...")
+    blink_counter = 0
+    blink_times = []
 
-# Start webcam
-cap = cv2.VideoCapture(0)
-blink_times = []
+    detector = dlib.get_frontal_face_detector()
+    predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 
-def speak(text):
-    engine.say(text)
+    (lStart, lEnd) = (42, 48)
+    (rStart, rEnd) = (36, 42)
+
+    cap = cv2.VideoCapture(0)
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        rects = detector(gray, 0)
+
+        for rect in rects:
+            shape = predictor(gray, rect)
+            shape = [(shape.part(i).x, shape.part(i).y) for i in range(68)]
+
+            leftEye = shape[lStart:lEnd]
+            rightEye = shape[rStart:rEnd]
+
+            leftEAR = eye_aspect_ratio(leftEye)
+            rightEAR = eye_aspect_ratio(rightEye)
+            ear = (leftEAR + rightEAR) / 2.0
+
+            if ear < 0.21:
+                blink_times.append(time.time())
+                time.sleep(0.2)
+
+                if len(blink_times) >= triple_count:
+                    if blink_times[-1] - blink_times[-triple_count] <= time_limit:
+                        cap.release()
+                        cv2.destroyAllWindows()
+                        return True
+
+        cv2.imshow("Blink Detection", frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+    return False
+
+# Audio command function
+def listen_and_execute():
+    recognizer = sr.Recognizer()
+    engine = pyttsx3.init()
+    engine.say("Audio mode activated. I’m listening, melita")
     engine.runAndWait()
 
-def activate_audio_mode():
-    recognizer = sr.Recognizer()
-    with sr.Microphone() as source:
-        print("🎤 Listening...")
-        speak("I'm listening to you...")
-        audio = recognizer.listen(source)
-        try:
-            command = recognizer.recognize_google(audio).lower()
-            print("You said:", command)
-            if "hi" in command:
-                speak("hi, whats up?")
-            elif "what are u doing" in command:
-                speak("i am listening to u.....")
-            else:
-                speak("Mmm, didn’t catch that, say it again slow")
-        except:
-            speak("Oops, couldn’t hear you, try again later")
+    while True:
+        with sr.Microphone() as source:
+            recognizer.adjust_for_ambient_noise(source, duration=0.5)
+            print("Say something melita...")
+            try:
+                audio = recognizer.listen(source, timeout=5, phrase_time_limit=5)
+                command = recognizer.recognize_google(audio).lower()
+                print(f"Command: {command}")
 
-while True:
-    ret, frame = cap.read()
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+                if "i want to do shopping" in command:
+                    engine.say("Opening Amazon.")
+                    engine.runAndWait()
+                    webbrowser.open("https://www.amazon.com")
 
-    for (x, y, w, h) in faces:
-        roi_gray = gray[y:y+h, x:x+w]
-        eyes = eye_cascade.detectMultiScale(roi_gray)
-        
-        if len(eyes) == 0:
-            blink_times.append(time.time())
-            blink_times = [t for t in blink_times if time.time() - t < 3]
-            if len(blink_times) >= 3:
-                speak("Audio mode activated")
-                activate_audio_mode()
-                blink_times.clear()
+                elif "open chrome" in command:
+                    engine.say("Let me open Chrome for you.")
+                    engine.runAndWait()
+                    subprocess.Popen("C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe")
 
-    cv2.imshow('Blink Detector', frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+                elif "play" in command:
+                    song = command.replace("play", "").strip()
+                    engine.say(f"Playing {song} on YouTube.")
+                    engine.runAndWait()
+                    pywhatkit.playonyt(song)
 
-cap.release()
-cv2.destroyAllWindows()
+                elif "stop" in command:
+                    engine.say("Alright, stopping audio mode.")
+                    engine.runAndWait()
+                    break
+
+                else:
+                    engine.say("I didn’t catch that, sorry.")
+                    engine.runAndWait()
+
+            except sr.UnknownValueError:
+                engine.say("Speak clearly, melita.")
+                engine.runAndWait()
+
+            except sr.WaitTimeoutError:
+                engine.say("You didn’t say anything, melita.")
+                engine.runAndWait()
+
+            except sr.RequestError:
+                engine.say("Something’s wrong with your internet.")
+                engine.runAndWait()
+
+# Main flow
+if __name__ == "__main__":
+    if detect_blink():
+        print("Triple blink detected .....Switching to audio mode...")
+        listen_and_execute()
+
