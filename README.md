@@ -109,7 +109,7 @@ This project demonstrates a practical, accessible solution for hands-free system
 
 ## Contributing
 
-We welcome contributions to enhance the functionality and performance of the system. To contribute:
+I welcome contributions to enhance the functionality and performance of the system. To contribute:
 
 1. Fork the repository.
 2. Create a new branch (`git checkout -b feature-branch`).
@@ -120,6 +120,8 @@ We welcome contributions to enhance the functionality and performance of the sys
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+### Thank You :]
 
 
 
