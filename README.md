@@ -1,4 +1,4 @@
-Quick Explanation of how it works :
+## Quick Explanation of how it works :
 Project Title:
 Audio Mode Activation via Blink Detection
 
