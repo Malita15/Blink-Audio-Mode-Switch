@@ -1,11 +1,11 @@
 ## Quick Explanation of how it works :
-Project Title:
+### Project Title:
 Audio Mode Activation via Blink Detection
 
-Objective:
+### Objective:
 To create a system that activates voice command mode using a triple blink gesture, allowing the user to perform system tasks hands-free through voice commands.
 
-list of Software Requirements:
+### list of Software Requirements:
 
 Python 3.x
 
@@ -26,7 +26,7 @@ Webbrowser
 Subprocess
 
 
-Working Principle:
+### Working Principle:
 
 The system uses OpenCV and Dlib to capture live video and detect a triple blink gesture.
 
@@ -46,7 +46,7 @@ Saying "Stop" deactivates Audio Mode.
 Pyttsx3 is used for text-to-speech feedback, enhancing interactivity.
 
 
-Conclusion:
+### Conclusion:
 This project demonstrates a practical, accessible solution for hands-free system control using blink detection and voice commands. It combines computer vision and speech recognition modules effectively.
 
 
